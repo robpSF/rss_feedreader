@@ -2,7 +2,6 @@ import streamlit as st
 import feedparser
 import requests
 from bs4 import BeautifulSoup
-import re
 
 def fetch_rss_feed(url):
     """
@@ -27,19 +26,17 @@ def fetch_rss_feed(url):
     
     return articles
 
-def clean_html(soup):
+def clean_html(html):
     """
     Cleans HTML content to plain text.
     
     Args:
-    soup (BeautifulSoup): The BeautifulSoup object of the HTML content.
+    html (str): The HTML content to clean.
     
     Returns:
     str: The cleaned plain text content.
     """
-    # Remove <img ... </a> tags and their content
-    soup = re.sub(r'<img.*?</a>', '', soup, flags=re.DOTALL)
-
+    soup = BeautifulSoup(html, 'html.parser')
 
     # Remove script and style elements
     for script_or_style in soup(['script', 'style']):
@@ -54,8 +51,6 @@ def clean_html(soup):
     chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
     # Remove blank lines
     text = '\n'.join(chunk for chunk in chunks if chunk)
-
-    text = re.sub(r'<img.*?</a>', '', text, flags=re.DOTALL)
 
     return text
 
@@ -74,8 +69,8 @@ def fetch_full_article(link):
         response.raise_for_status()
         soup = BeautifulSoup(response.content, 'html.parser')
 
-        # Clean the HTML content
-        full_text = clean_html(soup)
+        # Remove all HTML tags and add a line feed for each new line
+        full_text = clean_html(str(soup))
 
         return full_text
     except Exception as e:
