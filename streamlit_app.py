@@ -2,6 +2,9 @@ import streamlit as st
 import feedparser
 import requests
 from bs4 import BeautifulSoup
+import pandas as pd
+from datetime import datetime
+from io import BytesIO
 
 def fetch_rss_feed(url):
     """
@@ -11,7 +14,7 @@ def fetch_rss_feed(url):
     url (str): The URL of the RSS feed.
     
     Returns:
-    list: A list of dictionaries containing the title, link, and summary of the most recent articles.
+    list: A list of dictionaries containing the title, link, summary, and published date of the most recent articles.
     """
     feed = feedparser.parse(url)
     articles = []
@@ -20,7 +23,8 @@ def fetch_rss_feed(url):
         article = {
             'title': entry.title if 'title' in entry else 'No title available',
             'link': entry.link if 'link' in entry else '',
-            'summary': entry.summary if 'summary' in entry else 'No summary available'
+            'summary': entry.summary if 'summary' in entry else 'No summary available',
+            'published': entry.published if 'published' in entry else ''
         }
         articles.append(article)
     
@@ -56,19 +60,23 @@ def fetch_full_article(link):
     link (str): The URL of the article.
     
     Returns:
-    str: The full article content with HTML tags removed and line feeds added.
+    tuple: The full article content, and the image URL.
     """
     try:
         response = requests.get(link)
         response.raise_for_status()
         soup = BeautifulSoup(response.content, 'html.parser')
 
-        # Remove all HTML tags and add a line feed for each new paragraph
+        # Get the full text content
         full_text = clean_html(str(soup))
+        
+        # Get the first image URL if available
+        image_tag = soup.find('img')
+        image_url = image_tag['src'] if image_tag else ''
 
-        return full_text
+        return full_text, image_url
     except Exception as e:
-        return f"Error fetching article content: {e}"
+        return f"Error fetching article content: {e}", ''
 
 def display_articles(articles):
     """
@@ -82,10 +90,42 @@ def display_articles(articles):
         st.write(article['summary'])
 
         if article['link']:
-            full_article_content = fetch_full_article(article['link'])
+            full_article_content, image_url = fetch_full_article(article['link'])
             st.write(full_article_content)
-
+            if image_url:
+                st.image(image_url)
+            
             st.markdown(f"[Read more...]({article['link']})\n")
+
+def save_to_excel(articles):
+    """
+    Saves the articles to an Excel file.
+    
+    Args:
+    articles (list): A list of dictionaries containing the article details.
+    
+    Returns:
+    bytes: The Excel file in bytes.
+    """
+    data = []
+    for article in articles:
+        full_article_content, image_url = fetch_full_article(article['link'])
+        timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
+        data.append({
+            'Subject': article['title'],
+            'Message': full_article_content,
+            'Reply': '',
+            'Timestamp': timestamp,
+            'Expected Action': '',
+            'ImageURL': image_url,
+            'Subtitle': article['summary']
+        })
+    
+    df = pd.DataFrame(data)
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Articles')
+    return output.getvalue()
 
 def main():
     st.title("RSS Feed Reader")
@@ -98,6 +138,15 @@ def main():
         if articles:
             st.write(f"Showing the 5 most recent articles from {rss_url}")
             display_articles(articles)
+            
+            # Save articles to Excel and provide download button
+            excel_data = save_to_excel(articles)
+            st.download_button(
+                label="Download Excel file",
+                data=excel_data,
+                file_name="articles.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
         else:
             st.write("No articles found or there was an error fetching the feed.")
 
