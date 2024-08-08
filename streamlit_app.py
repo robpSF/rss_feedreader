@@ -17,19 +17,23 @@ def fetch_rss_feed(url, num_articles=5):
     Returns:
     list: A list of dictionaries containing the title, link, summary, and published date of the most recent articles.
     """
-    feed = feedparser.parse(url)
-    articles = []
+    try:
+        feed = feedparser.parse(url)
+        articles = []
 
-    for entry in feed.entries[:num_articles]:  # Get the specified number of articles
-        article = {
-            'title': entry.title if 'title' in entry else 'No title available',
-            'link': entry.link if 'link' in entry else '',
-            'summary': entry.summary if 'summary' in entry else 'No summary available',
-            'published': entry.published if 'published' in entry else ''
-        }
-        articles.append(article)
-    
-    return articles
+        for entry in feed.entries[:num_articles]:  # Get the specified number of articles
+            article = {
+                'title': entry.title if 'title' in entry else 'No title available',
+                'link': entry.link if 'link' in entry else '',
+                'summary': entry.summary if 'summary' in entry else 'No summary available',
+                'published': entry.published if 'published' in entry else ''
+            }
+            articles.append(article)
+        
+        return articles
+    except Exception as e:
+        st.write(f"Error parsing RSS feed from {url}: {e}")
+        return []
 
 def clean_html(html):
     """
@@ -77,6 +81,7 @@ def fetch_full_article(link):
 
         return full_text, image_url
     except Exception as e:
+        st.write(f"Error fetching article content from {link}: {e}")
         return f"Error fetching article content: {e}", ''
 
 def display_articles(articles):
@@ -135,6 +140,7 @@ def process_persona_file(uploaded_file, num_articles):
     for _, row in df.iterrows():
         if 'Tags' in row and pd.notna(row['Tags']):
             rss_url = row['Tags']
+            st.write(f"Fetching articles from: {rss_url}")
             persona_articles = fetch_rss_feed(rss_url, num_articles)
             for article in persona_articles:
                 full_article_content, _ = fetch_full_article(article['link'])
