@@ -202,7 +202,7 @@ def main():
         rss_url = st.text_input("RSS Feed URL", "https://tass.com/rss/v2.xml")
 
         if st.button("Fetch Articles"):
-            articles = collect_articles(rss_url, 5)
+            articles = fetch_rss_feed(rss_url, 5)
             if articles:
                 st.write(f"Showing the 5 most recent articles from {rss_url}")
                 display_articles(articles)
