@@ -30,9 +30,9 @@ def display_articles(articles):
     Args:
     articles (list): A list of dictionaries containing the title and link of the articles.
     """
-    for idx, article in articles:
-        st.write(f"**{idx + 1}. {article['title']}**")
-        st.write(f"[Read more...]({article['link']})\n")
+    for idx, article in enumerate(articles):
+        st.markdown(f"**{idx + 1}. {article['title']}**")
+        st.markdown(f"[Read more...]({article['link']})\n")
 
 def main():
     st.title("RSS Feed Reader")
