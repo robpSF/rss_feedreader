@@ -163,7 +163,7 @@ def collect_articles(rss_url, num_articles):
                 'Question Type': '',
                 'ButtonText': '',
                 'DataPoint': '',
-                'persona_url': rss_url,
+                'persona_url': '',
                 'message_url': article['link']
             })
     
