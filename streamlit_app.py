@@ -81,7 +81,6 @@ def fetch_full_article(link):
 
         return full_text, image_url
     except Exception as e:
-        st.write(f"Error fetching article content from {link}: {e}")
         return f"Error fetching article content: {e}", ''
 
 def display_articles(articles):
@@ -106,8 +105,6 @@ def display_articles(articles):
                         st.write(f"Error displaying image: {e}")
                 
                 st.markdown(f"[Read more...]({article['link']})\n")
-        else:
-            st.write(f"Error: Article at index {idx} is missing one or more required fields.")
 
 def save_to_excel(articles, filename='articles.xlsx'):
     """
@@ -166,11 +163,9 @@ def collect_articles(rss_url, num_articles):
                 'Question Type': '',
                 'ButtonText': '',
                 'DataPoint': '',
-                'persona_url': '',
+                'persona_url': rss_url,
                 'message_url': article['link']
             })
-        else:
-            st.write(f"Error: Article from {rss_url} is missing a link.")
     
     return collected_articles
 
@@ -200,10 +195,6 @@ def process_persona_file(uploaded_file, num_articles):
                     article['From'] = row['Name']
                     article['ImageURL'] = row['Image']
                     articles.append(article)
-            else:
-                st.write(f"No valid URL found in Tags for row: {row['Name']}")
-        else:
-            st.write(f"Skipping row with missing or invalid Tags: {row}")
     
     return articles
 
@@ -217,9 +208,9 @@ def main():
         rss_url = st.text_input("RSS Feed URL", "https://tass.com/rss/v2.xml")
 
         if st.button("Fetch Articles"):
-            articles = collect_articles(rss_url, 5)
+            articles = collect_articles(rss_url, 3)
             if articles:
-                st.write(f"Showing the 5 most recent articles from {rss_url}")
+                st.write(f"Showing the 3 most recent articles from {rss_url}")
                 display_articles(articles)
                 
                 # Save articles to Excel and provide download button
