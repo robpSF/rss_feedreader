@@ -139,7 +139,9 @@ def process_persona_file(uploaded_file, num_articles):
 
     for _, row in df.iterrows():
         if 'Tags' in row and pd.notna(row['Tags']):
-            rss_url = row['Tags']
+            tags = row['Tags'].split(',')
+            # Find the URL in the Tags field
+            rss_url = next((tag for tag in tags if tag.startswith('http')), None)
             if rss_url:
                 st.write(f"Fetching articles from: {rss_url}")
                 persona_articles = fetch_rss_feed(rss_url, num_articles)
@@ -156,8 +158,8 @@ def process_persona_file(uploaded_file, num_articles):
                         'ImageURL': row['Image'],
                         'Subtitle': article['summary']
                     })
-        else:
-            st.write(f"Skipping row with missing or invalid URL: {row['Tags']}")
+            else:
+                st.write(f"No valid URL found in Tags for row: {row['Name']}")
     
     return articles
 
