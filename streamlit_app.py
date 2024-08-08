@@ -9,7 +9,7 @@ def fetch_rss_feed(url):
     url (str): The URL of the RSS feed.
     
     Returns:
-    list: A list of dictionaries containing the title and link of the most recent articles.
+    list: A list of dictionaries containing the title, link, and summary of the most recent articles.
     """
     feed = feedparser.parse(url)
     articles = []
@@ -17,7 +17,8 @@ def fetch_rss_feed(url):
     for entry in feed.entries[:5]:  # Get the 5 most recent articles
         article = {
             'title': entry.title,
-            'link': entry.link
+            'link': entry.link,
+            'summary': entry.summary if 'summary' in entry else 'No summary available'
         }
         articles.append(article)
     
@@ -28,10 +29,11 @@ def display_articles(articles):
     Displays the fetched articles.
     
     Args:
-    articles (list): A list of dictionaries containing the title and link of the articles.
+    articles (list): A list of dictionaries containing the title, link, and summary of the articles.
     """
     for idx, article in enumerate(articles):
-        st.markdown(f"**{idx + 1}. {article['title']}**")
+        st.markdown(f"### {idx + 1}. {article['title']}")
+        st.write(article['summary'])
         st.markdown(f"[Read more...]({article['link']})\n")
 
 def main():
