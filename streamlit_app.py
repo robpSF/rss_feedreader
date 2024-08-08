@@ -140,21 +140,24 @@ def process_persona_file(uploaded_file, num_articles):
     for _, row in df.iterrows():
         if 'Tags' in row and pd.notna(row['Tags']):
             rss_url = row['Tags']
-            st.write(f"Fetching articles from: {rss_url}")
-            persona_articles = fetch_rss_feed(rss_url, num_articles)
-            for article in persona_articles:
-                full_article_content, _ = fetch_full_article(article['link'])
-                timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
-                articles.append({
-                    'From': row['Name'],
-                    'Subject': article['title'],
-                    'Message': full_article_content,
-                    'Reply': '',
-                    'Timestamp': timestamp,
-                    'Expected Action': '',
-                    'ImageURL': row['Image'],
-                    'Subtitle': article['summary']
-                })
+            if rss_url:
+                st.write(f"Fetching articles from: {rss_url}")
+                persona_articles = fetch_rss_feed(rss_url, num_articles)
+                for article in persona_articles:
+                    full_article_content, _ = fetch_full_article(article['link'])
+                    timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
+                    articles.append({
+                        'From': row['Name'],
+                        'Subject': article['title'],
+                        'Message': full_article_content,
+                        'Reply': '',
+                        'Timestamp': timestamp,
+                        'Expected Action': '',
+                        'ImageURL': row['Image'],
+                        'Subtitle': article['summary']
+                    })
+        else:
+            st.write(f"Skipping row with missing or invalid URL: {row['Tags']}")
     
     return articles
 
