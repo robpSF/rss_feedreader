@@ -93,7 +93,10 @@ def display_articles(articles):
             full_article_content, image_url = fetch_full_article(article['link'])
             st.write(full_article_content)
             if image_url:
-                st.image(image_url)
+                try:
+                    st.image(image_url)
+                except Exception as e:
+                    st.write(f"Error displaying image: {e}")
             
             st.markdown(f"[Read more...]({article['link']})\n")
 
