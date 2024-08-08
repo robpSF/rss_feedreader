@@ -38,10 +38,8 @@ def clean_html(soup):
     str: The cleaned plain text content.
     """
     # Remove <img ... </a> tags and their content
-    for tag in soup.find_all('img'):
-        parent = tag.find_parent('a')
-        if parent:
-            parent.decompose()
+    soup = re.sub(r'<img.*?</a>', '', soup, flags=re.DOTALL)
+
 
     # Remove script and style elements
     for script_or_style in soup(['script', 'style']):
@@ -56,6 +54,8 @@ def clean_html(soup):
     chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
     # Remove blank lines
     text = '\n'.join(chunk for chunk in chunks if chunk)
+
+    text = re.sub(r'<img.*?</a>', '', text, flags=re.DOTALL)
 
     return text
 
