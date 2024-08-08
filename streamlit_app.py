@@ -111,7 +111,7 @@ def display_articles(articles):
 
 def save_to_excel(articles, filename='articles.xlsx'):
     """
-    Saves the articles to an Excel file.
+    Saves the articles to an Excel file with the specified columns.
     
     Args:
     articles (list): A list of dictionaries containing the article details.
@@ -120,7 +120,9 @@ def save_to_excel(articles, filename='articles.xlsx'):
     Returns:
     bytes: The Excel file in bytes.
     """
-    df = pd.DataFrame(articles)
+    columns = ['Serial', 'Number', 'Time', 'From', 'Faction', 'To', 'Team', 'Method', 'On', 'Subject', 'Message', 'Reply', 'Timestamp', 'Expected Action', 'ImageURL', 'Subtitle', 'Question Type', 'ButtonText', 'DataPoint', 'persona_url', 'message_url']
+    
+    df = pd.DataFrame(articles, columns=columns)
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='Articles')
@@ -145,14 +147,27 @@ def collect_articles(rss_url, num_articles):
             full_article_content, image_url = fetch_full_article(article['link'])
             timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
             collected_articles.append({
+                'Serial': '',
+                'Number': '',
+                'Time': '',
                 'From': '',
+                'Faction': '',
+                'To': '',
+                'Team': '',
+                'Method': '',
+                'On': '',
                 'Subject': article['title'],
                 'Message': full_article_content,
                 'Reply': '',
                 'Timestamp': timestamp,
                 'Expected Action': '',
                 'ImageURL': image_url,
-                'Subtitle': article['summary']
+                'Subtitle': article['summary'],
+                'Question Type': '',
+                'ButtonText': '',
+                'DataPoint': '',
+                'persona_url': rss_url,
+                'message_url': article['link']
             })
         else:
             st.write(f"Error: Article from {rss_url} is missing a link.")
@@ -202,7 +217,7 @@ def main():
         rss_url = st.text_input("RSS Feed URL", "https://tass.com/rss/v2.xml")
 
         if st.button("Fetch Articles"):
-            articles = fetch_rss_feed(rss_url, 5)
+            articles = collect_articles(rss_url, 5)
             if articles:
                 st.write(f"Showing the 5 most recent articles from {rss_url}")
                 display_articles(articles)
