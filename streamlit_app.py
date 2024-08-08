@@ -1,5 +1,7 @@
 import streamlit as st
 import feedparser
+import requests
+from bs4 import BeautifulSoup
 
 def fetch_rss_feed(url):
     """
@@ -24,6 +26,29 @@ def fetch_rss_feed(url):
     
     return articles
 
+def fetch_full_article(link):
+    """
+    Fetches the full article content from the given link.
+    
+    Args:
+    link (str): The URL of the article.
+    
+    Returns:
+    str: The full article content.
+    """
+    try:
+        response = requests.get(link)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        # This will vary depending on the website's structure
+        paragraphs = soup.find_all('p')
+        full_text = "\n".join(paragraph.get_text() for paragraph in paragraphs)
+
+        return full_text
+    except Exception as e:
+        return f"Error fetching article content: {e}"
+
 def display_articles(articles):
     """
     Displays the fetched articles.
@@ -34,7 +59,11 @@ def display_articles(articles):
     for idx, article in enumerate(articles):
         st.markdown(f"### {idx + 1}. {article['title']}")
         st.write(article['summary'])
+
         if article['link']:
+            full_article_content = fetch_full_article(article['link'])
+            st.write(full_article_content)
+
             st.markdown(f"[Read more...]({article['link']})\n")
 
 def main():
