@@ -126,6 +126,39 @@ def save_to_excel(articles, filename='articles.xlsx'):
         df.to_excel(writer, index=False, sheet_name='Articles')
     return output.getvalue()
 
+def collect_articles(rss_url, num_articles):
+    """
+    Collects articles from a given RSS feed URL.
+    
+    Args:
+    rss_url (str): The URL of the RSS feed.
+    num_articles (int): The number of articles to fetch.
+    
+    Returns:
+    list: A list of dictionaries containing the article details.
+    """
+    articles = fetch_rss_feed(rss_url, num_articles)
+    collected_articles = []
+
+    for article in articles:
+        if 'link' in article and article['link']:
+            full_article_content, image_url = fetch_full_article(article['link'])
+            timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
+            collected_articles.append({
+                'From': '',
+                'Subject': article['title'],
+                'Message': full_article_content,
+                'Reply': '',
+                'Timestamp': timestamp,
+                'Expected Action': '',
+                'ImageURL': image_url,
+                'Subtitle': article['summary']
+            })
+        else:
+            st.write(f"Error: Article from {rss_url} is missing a link.")
+    
+    return collected_articles
+
 def process_persona_file(uploaded_file, num_articles):
     """
     Processes the uploaded persona file and fetches articles based on the URLs in the Tags column.
@@ -147,23 +180,11 @@ def process_persona_file(uploaded_file, num_articles):
             rss_url = next((tag for tag in tags if tag.startswith('http')), None)
             if rss_url:
                 st.write(f"Fetching articles from: {rss_url}")
-                persona_articles = fetch_rss_feed(rss_url, num_articles)
+                persona_articles = collect_articles(rss_url, num_articles)
                 for article in persona_articles:
-                    if 'link' in article and article['link']:
-                        full_article_content, _ = fetch_full_article(article['link'])
-                        timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
-                        articles.append({
-                            'From': row['Name'],
-                            'Subject': article['title'],
-                            'Message': full_article_content,
-                            'Reply': '',
-                            'Timestamp': timestamp,
-                            'Expected Action': '',
-                            'ImageURL': row['Image'],
-                            'Subtitle': article['summary']
-                        })
-                    else:
-                        st.write(f"Error: Article from {rss_url} is missing a link.")
+                    article['From'] = row['Name']
+                    article['ImageURL'] = row['Image']
+                    articles.append(article)
             else:
                 st.write(f"No valid URL found in Tags for row: {row['Name']}")
         else:
@@ -181,7 +202,7 @@ def main():
         rss_url = st.text_input("RSS Feed URL", "https://tass.com/rss/v2.xml")
 
         if st.button("Fetch Articles"):
-            articles = fetch_rss_feed(rss_url)
+            articles = collect_articles(rss_url, 5)
             if articles:
                 st.write(f"Showing the 5 most recent articles from {rss_url}")
                 display_articles(articles)
