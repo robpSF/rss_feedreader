@@ -6,12 +6,13 @@ import pandas as pd
 from datetime import datetime
 from io import BytesIO
 
-def fetch_rss_feed(url):
+def fetch_rss_feed(url, num_articles=5):
     """
     Fetches and parses the RSS feed from the given URL.
     
     Args:
     url (str): The URL of the RSS feed.
+    num_articles (int): The number of articles to fetch.
     
     Returns:
     list: A list of dictionaries containing the title, link, summary, and published date of the most recent articles.
@@ -19,7 +20,7 @@ def fetch_rss_feed(url):
     feed = feedparser.parse(url)
     articles = []
 
-    for entry in feed.entries[:5]:  # Get the 5 most recent articles
+    for entry in feed.entries[:num_articles]:  # Get the specified number of articles
         article = {
             'title': entry.title if 'title' in entry else 'No title available',
             'link': entry.link if 'link' in entry else '',
@@ -100,58 +101,105 @@ def display_articles(articles):
             
             st.markdown(f"[Read more...]({article['link']})\n")
 
-def save_to_excel(articles):
+def save_to_excel(articles, filename='articles.xlsx'):
     """
     Saves the articles to an Excel file.
     
     Args:
     articles (list): A list of dictionaries containing the article details.
+    filename (str): The name of the Excel file to save.
     
     Returns:
     bytes: The Excel file in bytes.
     """
-    data = []
-    for article in articles:
-        full_article_content, image_url = fetch_full_article(article['link'])
-        timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
-        data.append({
-            'Subject': article['title'],
-            'Message': full_article_content,
-            'Reply': '',
-            'Timestamp': timestamp,
-            'Expected Action': '',
-            'ImageURL': image_url,
-            'Subtitle': article['summary']
-        })
-    
-    df = pd.DataFrame(data)
+    df = pd.DataFrame(articles)
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='Articles')
     return output.getvalue()
 
+def process_persona_file(uploaded_file, num_articles):
+    """
+    Processes the uploaded persona file and fetches articles based on the URLs in the Tags column.
+    
+    Args:
+    uploaded_file: The uploaded Excel file containing persona details.
+    num_articles: The number of articles to fetch per RSS feed.
+    
+    Returns:
+    list: A list of dictionaries containing the article details.
+    """
+    df = pd.read_excel(uploaded_file)
+    articles = []
+
+    for _, row in df.iterrows():
+        if 'Tags' in row and pd.notna(row['Tags']):
+            rss_url = row['Tags']
+            persona_articles = fetch_rss_feed(rss_url, num_articles)
+            for article in persona_articles:
+                full_article_content, _ = fetch_full_article(article['link'])
+                timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
+                articles.append({
+                    'From': row['Name'],
+                    'Subject': article['title'],
+                    'Message': full_article_content,
+                    'Reply': '',
+                    'Timestamp': timestamp,
+                    'Expected Action': '',
+                    'ImageURL': row['Image'],
+                    'Subtitle': article['summary']
+                })
+    
+    return articles
+
 def main():
     st.title("RSS Feed Reader")
-    st.write("Enter the URL of the RSS feed you want to read:")
 
-    rss_url = st.text_input("RSS Feed URL", "https://tass.com/rss/v2.xml")
+    mode = st.selectbox("Select mode", ["Single Mode", "Batch Mode"])
 
-    if st.button("Fetch Articles"):
-        articles = fetch_rss_feed(rss_url)
-        if articles:
-            st.write(f"Showing the 5 most recent articles from {rss_url}")
-            display_articles(articles)
-            
-            # Save articles to Excel and provide download button
-            excel_data = save_to_excel(articles)
-            st.download_button(
-                label="Download Excel file",
-                data=excel_data,
-                file_name="articles.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-        else:
-            st.write("No articles found or there was an error fetching the feed.")
+    if mode == "Single Mode":
+        st.write("Enter the URL of the RSS feed you want to read:")
+        rss_url = st.text_input("RSS Feed URL", "https://tass.com/rss/v2.xml")
+
+        if st.button("Fetch Articles"):
+            articles = fetch_rss_feed(rss_url)
+            if articles:
+                st.write(f"Showing the 5 most recent articles from {rss_url}")
+                display_articles(articles)
+                
+                # Save articles to Excel and provide download button
+                excel_data = save_to_excel(articles)
+                st.download_button(
+                    label="Download Excel file",
+                    data=excel_data,
+                    file_name="articles.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+            else:
+                st.write("No articles found or there was an error fetching the feed.")
+
+    elif mode == "Batch Mode":
+        st.write("Upload an Excel file with persona details:")
+        uploaded_file = st.file_uploader("Choose a file", type=["xlsx"])
+
+        if uploaded_file is not None:
+            num_articles = st.number_input("Number of articles to fetch per RSS feed", min_value=1, max_value=5, value=5)
+            if st.button("Fetch Articles"):
+                articles = process_persona_file(uploaded_file, num_articles)
+                if articles:
+                    st.write(f"Showing the articles fetched from the provided persona file")
+                    display_articles(articles)
+                    
+                    # Save articles to Excel and provide download button
+                    excel_data = save_to_excel(articles)
+                    st.download_button(
+                        label="Download Excel file",
+                        data=excel_data,
+                        file_name="articles.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+                else:
+                    st.write("No articles found or there was an error processing the file.")
 
 if __name__ == "__main__":
     main()
