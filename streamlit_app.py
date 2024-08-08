@@ -34,16 +34,15 @@ def fetch_full_article(link):
     link (str): The URL of the article.
     
     Returns:
-    str: The full article content.
+    str: The full article content with HTML tags removed and line feeds added.
     """
     try:
         response = requests.get(link)
         response.raise_for_status()
         soup = BeautifulSoup(response.content, 'html.parser')
 
-        # This will vary depending on the website's structure
-        paragraphs = soup.find_all('p')
-        full_text = "\n".join(paragraph.get_text() for paragraph in paragraphs)
+        # Remove all HTML tags and add a line feed for each new line
+        full_text = soup.get_text(separator="\n")
 
         return full_text
     except Exception as e:
