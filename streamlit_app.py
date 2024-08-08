@@ -28,13 +28,13 @@ def fetch_rss_feed(url):
 
 def clean_html(html):
     """
-    Cleans HTML content to plain text.
+    Cleans HTML content to plain text and adds an extra line feed after each line.
     
     Args:
     html (str): The HTML content to clean.
     
     Returns:
-    str: The cleaned plain text content.
+    str: The cleaned plain text content with extra line feeds.
     """
     soup = BeautifulSoup(html, 'html.parser')
 
@@ -49,8 +49,8 @@ def clean_html(html):
     lines = (line.strip() for line in text.splitlines())
     # Break multi-headlines into a line each
     chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-    # Remove blank lines
-    text = '\n'.join(chunk for chunk in chunks if chunk)
+    # Remove blank lines and add extra line feed
+    text = '\n\n'.join(chunk for chunk in chunks if chunk)
 
     return text
 
