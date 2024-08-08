@@ -92,19 +92,22 @@ def display_articles(articles):
     articles (list): A list of dictionaries containing the title, link, and summary of the articles.
     """
     for idx, article in enumerate(articles):
-        st.markdown(f"### {idx + 1}. {article['title']}")
-        st.write(article['summary'])
+        if 'title' in article and 'summary' in article and 'link' in article:
+            st.markdown(f"### {idx + 1}. {article['title']}")
+            st.write(article['summary'])
 
-        if article['link']:
-            full_article_content, image_url = fetch_full_article(article['link'])
-            st.write(full_article_content)
-            if image_url:
-                try:
-                    st.image(image_url)
-                except Exception as e:
-                    st.write(f"Error displaying image: {e}")
-            
-            st.markdown(f"[Read more...]({article['link']})\n")
+            if article['link']:
+                full_article_content, image_url = fetch_full_article(article['link'])
+                st.write(full_article_content)
+                if image_url:
+                    try:
+                        st.image(image_url)
+                    except Exception as e:
+                        st.write(f"Error displaying image: {e}")
+                
+                st.markdown(f"[Read more...]({article['link']})\n")
+        else:
+            st.write(f"Error: Article at index {idx} is missing one or more required fields.")
 
 def save_to_excel(articles, filename='articles.xlsx'):
     """
@@ -146,20 +149,25 @@ def process_persona_file(uploaded_file, num_articles):
                 st.write(f"Fetching articles from: {rss_url}")
                 persona_articles = fetch_rss_feed(rss_url, num_articles)
                 for article in persona_articles:
-                    full_article_content, _ = fetch_full_article(article['link'])
-                    timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
-                    articles.append({
-                        'From': row['Name'],
-                        'Subject': article['title'],
-                        'Message': full_article_content,
-                        'Reply': '',
-                        'Timestamp': timestamp,
-                        'Expected Action': '',
-                        'ImageURL': row['Image'],
-                        'Subtitle': article['summary']
-                    })
+                    if 'link' in article and article['link']:
+                        full_article_content, _ = fetch_full_article(article['link'])
+                        timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
+                        articles.append({
+                            'From': row['Name'],
+                            'Subject': article['title'],
+                            'Message': full_article_content,
+                            'Reply': '',
+                            'Timestamp': timestamp,
+                            'Expected Action': '',
+                            'ImageURL': row['Image'],
+                            'Subtitle': article['summary']
+                        })
+                    else:
+                        st.write(f"Error: Article from {rss_url} is missing a link.")
             else:
                 st.write(f"No valid URL found in Tags for row: {row['Name']}")
+        else:
+            st.write(f"Skipping row with missing or invalid Tags: {row}")
     
     return articles
 
