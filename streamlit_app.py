@@ -26,6 +26,34 @@ def fetch_rss_feed(url):
     
     return articles
 
+def clean_html(html):
+    """
+    Cleans HTML content to plain text.
+    
+    Args:
+    html (str): The HTML content to clean.
+    
+    Returns:
+    str: The cleaned plain text content.
+    """
+    soup = BeautifulSoup(html, 'html.parser')
+
+    # Remove script and style elements
+    for script_or_style in soup(['script', 'style']):
+        script_or_style.decompose()
+
+    # Get text and separate by lines
+    text = soup.get_text(separator="\n")
+
+    # Break into lines and remove leading/trailing spaces
+    lines = (line.strip() for line in text.splitlines())
+    # Break multi-headlines into a line each
+    chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+    # Remove blank lines
+    text = '\n'.join(chunk for chunk in chunks if chunk)
+
+    return text
+
 def fetch_full_article(link):
     """
     Fetches the full article content from the given link.
@@ -42,7 +70,7 @@ def fetch_full_article(link):
         soup = BeautifulSoup(response.content, 'html.parser')
 
         # Remove all HTML tags and add a line feed for each new line
-        full_text = soup.get_text(separator="\n")
+        full_text = clean_html(str(soup))
 
         return full_text
     except Exception as e:
