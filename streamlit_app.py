@@ -27,20 +27,21 @@ def fetch_rss_feed(url):
     
     return articles
 
-def clean_html(html):
+def clean_html(soup):
     """
     Cleans HTML content to plain text.
     
     Args:
-    html (str): The HTML content to clean.
+    soup (BeautifulSoup): The BeautifulSoup object of the HTML content.
     
     Returns:
     str: The cleaned plain text content.
     """
     # Remove <img ... </a> tags and their content
-    cleaned_html = re.sub(r'<img.*?</a>', '', html, flags=re.DOTALL)
-
-    soup = BeautifulSoup(cleaned_html, 'html.parser')
+    for tag in soup.find_all('img'):
+        parent = tag.find_parent('a')
+        if parent:
+            parent.decompose()
 
     # Remove script and style elements
     for script_or_style in soup(['script', 'style']):
@@ -73,8 +74,8 @@ def fetch_full_article(link):
         response.raise_for_status()
         soup = BeautifulSoup(response.content, 'html.parser')
 
-        # Remove all HTML tags and add a line feed for each new line
-        full_text = clean_html(str(soup))
+        # Clean the HTML content
+        full_text = clean_html(soup)
 
         return full_text
     except Exception as e:
