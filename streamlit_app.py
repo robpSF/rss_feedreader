@@ -14,26 +14,17 @@ def fetch_rss_feed(url):
     url (str): The URL of the RSS feed.
     
     Returns:
-    list: A list of dictionaries containing the title, link, summary, published date, and image URL of the most recent articles.
+    list: A list of dictionaries containing the title, link, summary, and published date of the most recent articles.
     """
     feed = feedparser.parse(url)
     articles = []
 
     for entry in feed.entries[:5]:  # Get the 5 most recent articles
-        image_url = ''
-        if 'media_content' in entry:
-            image_url = entry.media_content[0]['url'] if 'url' in entry.media_content[0] else ''
-        elif 'enclosures' in entry:
-            image_url = entry.enclosures[0]['url'] if 'url' in entry.enclosures[0] else ''
-        elif 'image' in entry:
-            image_url = entry.image['url'] if 'url' in entry.image else ''
-        
         article = {
             'title': entry.title if 'title' in entry else 'No title available',
             'link': entry.link if 'link' in entry else '',
             'summary': entry.summary if 'summary' in entry else 'No summary available',
-            'published': entry.published if 'published' in entry else '',
-            'image_url': image_url
+            'published': entry.published if 'published' in entry else ''
         }
         articles.append(article)
     
@@ -69,7 +60,7 @@ def fetch_full_article(link):
     link (str): The URL of the article.
     
     Returns:
-    str: The full article content.
+    tuple: The full article content, and the image URL.
     """
     try:
         response = requests.get(link)
@@ -78,31 +69,34 @@ def fetch_full_article(link):
 
         # Get the full text content
         full_text = clean_html(str(soup))
+        
+        # Get the first image URL if available
+        image_tag = soup.find('img')
+        image_url = image_tag['src'] if image_tag else ''
 
-        return full_text
+        return full_text, image_url
     except Exception as e:
-        return f"Error fetching article content: {e}"
+        return f"Error fetching article content: {e}", ''
 
 def display_articles(articles):
     """
     Displays the fetched articles.
     
     Args:
-    articles (list): A list of dictionaries containing the title, link, summary, and image URL of the articles.
+    articles (list): A list of dictionaries containing the title, link, and summary of the articles.
     """
     for idx, article in enumerate(articles):
         st.markdown(f"### {idx + 1}. {article['title']}")
         st.write(article['summary'])
 
-        if article['image_url']:
-            try:
-                st.image(article['image_url'])
-            except Exception as e:
-                st.write(f"Error displaying image: {e}")
-
         if article['link']:
-            full_article_content = fetch_full_article(article['link'])
+            full_article_content, image_url = fetch_full_article(article['link'])
             st.write(full_article_content)
+            if image_url:
+                try:
+                    st.image(image_url)
+                except Exception as e:
+                    st.write(f"Error displaying image: {e}")
             
             st.markdown(f"[Read more...]({article['link']})\n")
 
@@ -118,7 +112,7 @@ def save_to_excel(articles):
     """
     data = []
     for article in articles:
-        full_article_content = fetch_full_article(article['link'])
+        full_article_content, image_url = fetch_full_article(article['link'])
         timestamp = datetime.now().strftime("%d/%m/%Y %H:%M")
         data.append({
             'Subject': article['title'],
@@ -126,7 +120,7 @@ def save_to_excel(articles):
             'Reply': '',
             'Timestamp': timestamp,
             'Expected Action': '',
-            'ImageURL': article['image_url'],
+            'ImageURL': image_url,
             'Subtitle': article['summary']
         })
     
