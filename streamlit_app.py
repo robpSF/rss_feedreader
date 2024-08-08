@@ -16,8 +16,8 @@ def fetch_rss_feed(url):
 
     for entry in feed.entries[:5]:  # Get the 5 most recent articles
         article = {
-            'title': entry.title,
-            'link': entry.link,
+            'title': entry.title if 'title' in entry else 'No title available',
+            'link': entry.link if 'link' in entry else '',
             'summary': entry.summary if 'summary' in entry else 'No summary available'
         }
         articles.append(article)
@@ -34,13 +34,14 @@ def display_articles(articles):
     for idx, article in enumerate(articles):
         st.markdown(f"### {idx + 1}. {article['title']}")
         st.write(article['summary'])
-        st.markdown(f"[Read more...]({article['link']})\n")
+        if article['link']:
+            st.markdown(f"[Read more...]({article['link']})\n")
 
 def main():
     st.title("RSS Feed Reader")
     st.write("Enter the URL of the RSS feed you want to read:")
 
-    rss_url = st.text_input("RSS Feed URL", "http://feeds.bbci.co.uk/news/rss.xml")
+    rss_url = st.text_input("RSS Feed URL", "https://tass.com/rss/v2.xml")
 
     if st.button("Fetch Articles"):
         articles = fetch_rss_feed(rss_url)
